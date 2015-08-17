@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Quick Kibana Crash Course</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+    <link media="all" rel="stylesheet" href="static/main.css" type="text/css"/>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Developing for edX Platform
+![logo](static/mitx_logo.png)
+
+### Carson Gee [@carsongee](https://github.com/carsongee)
+---
+class: center, middle
+
+# Agenda
+
+- Application Architecture
+- Dev Stack Overview
+- Folder Structure
+- Managing Settings
+- Managing Branches
+- Working on a Feature
+- Running Tests
+- Submitting a PR
+- Additional Documentation
+---
+class: full-width
+# edX Application Architecture
+![arch](static/app-arch.png)
+
+---
+# "Dev Stack"
+
+- Vagrant & Ansible
+- Core platform development (or forums, or xqueue)
+- Testing environment setup
+- Use your own tools
+- Development server and debug tools ready
+---
+# Dev Stack
+- Install Vagrant
+- Install VirtualBox
+
+```shell
+mkdir devstack
+cd devstack
+curl -L https://raw.githubusercontent.com/edx/configuration/master/vagrant/release/devstack/Vagrantfile > Vagrantfile
+vagrant plugin install vagrant-vbguest
+vagrant up
+vagrant ssh
+sudo su edxapp
+paver run_all_servers
+```
+
+- Visit http://localhost:8000 for LMS
+- Visit http://localhost:8100 for Studio
+---
+class: full-width
+# Folder structure
+![folder](static/folder-structure.png)
+
+---
+# Managing Settings
+
+- `/edx/app/edxapp/(lms|cms).env.json` and `/edx/app/edxapp/(lms|cms).auth.json`
+
+```json
+...
+    "EMAIL_BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+    "FEATURES": {
+        "ALLOW_ALL_ADVANCED_COMPONENTS": true,
+        ...
+        "USE_CUSTOM_THEME": true
+    },
+    "FEEDBACK_SUBMISSION_EMAIL": "",
+    "GITHUB_REPO_ROOT": "/edx/var/edxapp/data",
+...
+```
+
+- [`/edx/app/edx_ansible/server-vars.yml`](https://gist.github.com/carsongee/2ca7eb51bf10afc3c1eb)
+- [`/edx/app/edxapp/edx-platform/(lms|cms)/private.py`](https://gist.github.com/carsongee/8bd342e426e5d05d4348)
+
+---
+# Managing Branches
+
+Switch to using your fork:
+```bash
+cd ~/devstack
+git remote set-url origin git@github.com:<yourfork>/edx-platform
+git remote add edx https://github.com/edx/edx-platform
+git fetch
+```
+Update to new branch, or after rebase:
+```bash
+sudo /edx/bin/update edx-platform <branch_name>
+```
+Rebase:
+```bash
+git fetch edx && git rebase edx/master
+git push -f origin <branch_name>
+vagrant ssh
+sudo /edx/bin/update edx-platform <branch_name>
+```
+---
+# Running Tests
+
+- *Huge* test suite, probably don't want to run it all (let Jenkins do that on PR)
+- Paver helps automate running tests: `paver help` for all options
+
+---
+class: small-inline-code
+# Python Tests
+
+- `paver test_system -s lms`, `paver test_system -s cms --fasttest`
+- More importantly: `paver test_system -s lms -t lms/djangoapps/ccx/tests/test_ccx_modulestore.py`
+- `paver coverage`, `paver run_quality`, `paver run_quality --percentage=100`
+
+---
+# JavaScript and Acceptance
+- `paver test_js`, `paver test_js_run -s lms`
+- `paver run_jshint`
+- In your own browser: `paver test_js_dev -s lms`
+- Acceptance tests: `paver test_bokchoy` - supports -t option
+
+
+---
+# Submitting a PR
+- [Official Process](http://edx.readthedocs.org/projects/edx-developer-guide/en/latest/process/overview.html)
+- General Rules:
+    - If big, architecture and code list posting before code.
+    - Make sure no quality violations, full coverage, documentation and your tests pass.
+    - If user facing, or larger, you'll need a11y, i18n, and analytics.
+    - Respond quickly to comments.
+    - Be nice, win friends, and influence people (HipChat helps a lot here).
+
+---
+# Extra Resources
+
+- [Configuration Dev Stack Wiki](https://github.com/edx/configuration/wiki/edX-Developer-Stack)
+- [Platform Dev Stack Wiki](https://github.com/edx/edx-platform/wiki/Developing-on-the-edX-Developer-Stack)
+- [Test Engineering FAQ](https://github.com/edx/edx-platform/wiki/Test-engineering-FAQ)
+- [Writing and Running Tests](https://github.com/edx/edx-platform/blob/master/docs/en_us/internal/testing.rst)
+- [Development Guide](http://edx-developer-guide.readthedocs.org/en/latest/)
+- [Extending the Platform](http://edx-developer-guide.readthedocs.org/en/latest/extending_platform/extending.html)
+
+
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create({
+      highlightLanguage: 'bash',
+      highlightStyle: 'monokai'
+      });
+    </script>
+  </body>
+</html>
